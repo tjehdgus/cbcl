@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>맘이음 — 검사 결과를 함께 살펴드려요</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 색 — 따뜻한 sage + cream */
+            --primary: #5B8E7D;
+            --primary-dark: #467566;
+            --primary-light: #E8F0EC;
+            --primary-soft: #F2F7F4;
+            --accent: #E8A87C;
+            --accent-soft: #FBE9DC;
+            --cream: #FAF6F0;
+            --cream-dark: #F4ECDF;
+
+            /* 신호등 (부드럽게) */
+            --signal-green: #88B383;
+            --signal-green-bg: #E8F2E5;
+            --signal-yellow: #D9A93C;
+            --signal-yellow-bg: #FBF1D8;
+            --signal-coral: #D87A5E;
+            --signal-coral-bg: #F9E2D8;
+
+            /* 텍스트 */
+            --text: #2D3A3A;
+            --text-soft: #5C6B6B;
+            --text-light: #8A9595;
+            --text-muted: #B0B8B8;
+
+            /* 구조 */
+            --bg: #FAF6F0;
+            --card: #FFFFFF;
+            --border: #E8DFD0;
+            --border-soft: #F0E8DB;
+            --radius-sm: 10px;
+            --radius: 16px;
+            --radius-lg: 24px;
+            --shadow-xs: 0 1px 3px rgba(45, 58, 58, 0.04);
+            --shadow-sm: 0 2px 10px rgba(91, 142, 125, 0.07);
+            --shadow-md: 0 6px 24px rgba(91, 142, 125, 0.10);
+            --shadow-lg: 0 12px 40px rgba(91, 142, 125, 0.14);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ─────────── Header ─────────── */
+        .header {
+            position: relative;
+            background: linear-gradient(135deg, #5B8E7D 0%, #6BA092 50%, #7BB1A2 100%);
+            color: white;
+            padding: 2rem 2rem 2.2rem;
+            text-align: center;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -10%;
+            width: 70%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -50%; right: -10%;
+            width: 60%; height: 200%;
+            background: radial-gradient(circle, rgba(232,168,124,0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .header-inner { position: relative; z-index: 1; }
+        .header h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+        }
+        .header .tagline {
+            font-size: 0.95rem;
+            font-weight: 400;
+            opacity: 0.92;
+            margin-top: 0.4rem;
+            letter-spacing: 0.01em;
+        }
+        .leaf-icon {
+            display: inline-block;
+            font-size: 1.5rem;
+            transform: rotate(-15deg);
+            animation: gentle-sway 4s ease-in-out infinite;
+        }
+        @keyframes gentle-sway {
+            0%, 100% { transform: rotate(-15deg); }
+            50% { transform: rotate(-5deg); }
+        }
+
+        /* ─────────── Status bar ─────────── */
+        .status-bar {
+            background: var(--card);
+            border-bottom: 1px solid var(--border-soft);
+            padding: 0.6rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.6rem;
+            font-size: 0.82rem;
+        }
+        .status-bar .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.2rem 0.7rem;
+            border-radius: 999px;
+            font-weight: 500;
+        }
+        .status-bar .status.ok {
+            background: var(--signal-green-bg);
+            color: #4A7547;
+        }
+        .status-bar .status.missing {
+            background: var(--signal-coral-bg);
+            color: #A04A35;
+        }
+        .status-bar .status .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* ─────────── Layout ─────────── */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1.8rem 1.5rem 4rem;
+        }
+
+        /* ─────────── Cards ─────────── */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 1.6rem 1.8rem;
+            margin-bottom: 1.2rem;
+            border: 1px solid var(--border-soft);
+            animation: fade-up 0.5s ease;
+        }
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            letter-spacing: -0.01em;
+        }
+        .card h3 .h3-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: 10px;
+            background: var(--primary-light);
+            font-size: 1rem;
+        }
+
+        /* ─────────── Welcome ─────────── */
+        .welcome-wrap {
+            text-align: center;
+            padding: 2.5rem 1rem 1rem;
+        }
+        .welcome-illust {
+            font-size: 3.6rem;
+            line-height: 1;
+            margin-bottom: 1.2rem;
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent-soft));
+            width: 96px; height: 96px;
+            border-radius: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-md);
+        }
+        .welcome-wrap h2 {
+            color: var(--text);
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.6rem;
+        }
+        .welcome-wrap p {
+            color: var(--text-soft);
+            font-size: 0.98rem;
+            line-height: 1.8;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.9rem;
+            margin: 2rem auto 0;
+            max-width: 720px;
+        }
+        .feature-card {
+            background: var(--primary-soft);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius);
+            padding: 1.1rem 1.2rem;
+            text-align: left;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-light);
+        }
+        .feature-card .feature-icon {
+            font-size: 1.4rem;
+            margin-bottom: 0.4rem;
+            display: block;
+        }
+        .feature-card h4 {
+            color: var(--primary-dark);
+            font-size: 0.98rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+        .feature-card p {
+            font-size: 0.85rem;
+            color: var(--text-soft);
+            line-height: 1.6;
+        }
+
+        /* ─────────── Upload zone ─────────── */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2.8rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--cream);
+        }
+        .upload-zone:hover, .upload-zone.dragging {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+            transform: scale(1.005);
+        }
+        .upload-zone .icon {
+            font-size: 2.4rem;
+            margin-bottom: 0.8rem;
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+        .upload-zone:hover .icon { transform: translateY(-3px); }
+        .upload-zone p {
+            color: var(--text-soft);
+            font-size: 0.95rem;
+        }
+        .upload-zone strong { color: var(--primary-dark); font-weight: 600; }
+        .upload-zone input { display: none; }
+
+        /* ─────────── Buttons ─────────── */
+        .btn {
+            padding: 0.65rem 1.3rem;
+            border-radius: 12px;
+            border: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            letter-spacing: -0.01em;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(91, 142, 125, 0.25);
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(91, 142, 125, 0.35);
+        }
+        .btn-primary:disabled {
+            background: #B5C5BE;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-outline {
+            background: white;
+            color: var(--primary-dark);
+            border: 1px solid var(--border);
+        }
+        .btn-outline:hover {
+            background: var(--primary-soft);
+            border-color: var(--primary);
+        }
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 8px rgba(232, 168, 124, 0.3);
+        }
+        .btn-accent:hover {
+            filter: brightness(0.95);
+            transform: translateY(-1px);
+        }
+
+        /* ─────────── Child info card ─────────── */
+        .child-info-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary-soft) 0%, var(--cream) 100%);
+            border: 1px solid var(--primary-light);
+        }
+        .child-info-card .label {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .child-info-card .name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0.3rem 0 0.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .child-info-card .meta {
+            font-size: 0.85rem;
+            color: var(--text-soft);
+        }
+
+        /* ─────────── Tabs ─────────── */
+        .tabs {
+            display: flex;
+            gap: 0.4rem;
+            margin-bottom: 1.2rem;
+            padding: 0.4rem;
+            background: var(--cream-dark);
+            border-radius: 14px;
+            border: 1px solid var(--border-soft);
+        }
+        .tab {
+            flex: 1;
+            padding: 0.65rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+        .tab:hover { color: var(--primary-dark); }
+        .tab.active {
+            color: white;
+            background: var(--primary);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(91, 142, 125, 0.25);
+        }
+
+        /* ─────────── Score cards ─────────── */
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.9rem;
+        }
+        .score-card {
+            padding: 1.2rem 1.1rem;
+            border-radius: var(--radius);
+            text-align: left;
+            border: 1px solid transparent;
+            transition: transform 0.2s ease;
+            position: relative;
+        }
+        .score-card:hover { transform: translateY(-2px); }
+        .score-card.normal { background: var(--signal-green-bg); border-color: rgba(136, 179, 131, 0.3); }
+        .score-card.subclinical { background: var(--signal-yellow-bg); border-color: rgba(217, 169, 60, 0.3); }
+        .score-card.clinical { background: var(--signal-coral-bg); border-color: rgba(216, 122, 94, 0.3); }
+        .score-card .label-main {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+        .score-card .label-sub {
+            font-size: 0.74rem;
+            color: var(--text-light);
+            font-weight: 500;
+            margin-top: 0.1rem;
+        }
+        .score-card .desc {
+            font-size: 0.78rem;
+            color: var(--text-soft);
+            margin-top: 0.5rem;
+            line-height: 1.5;
+        }
+        .score-card .value-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-top: 0.9rem;
+            padding-top: 0.7rem;
+            border-top: 1px dashed rgba(0,0,0,0.08);
+        }
+        .score-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+        .score-card .value .t-prefix {
+            font-size: 0.72rem;
+            color: var(--text-light);
+            font-weight: 500;
+            margin-right: 0.2rem;
+        }
+        .score-card .category-pill {
+            font-size: 0.74rem;
+            font-weight: 600;
+            color: var(--text-soft);
+            padding: 0.18rem 0.55rem;
+            background: rgba(255,255,255,0.6);
+            border-radius: 999px;
+        }
+
+        /* ─────────── Scale bars ─────────── */
+        .scale-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.7rem 0;
+            border-bottom: 1px solid var(--border-soft);
+        }
+        .scale-item:last-child { border-bottom: none; }
+        .scale-name {
+            width: 130px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .scale-bar-wrap {
+            flex: 1;
+            height: 26px;
+            background: var(--cream-dark);
+            border-radius: 13px;
+            position: relative;
+            overflow: hidden;
+        }
+        .scale-bar {
+            height: 100%;
+            border-radius: 13px;
+            min-width: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            animation: bar-fill 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes bar-fill {
+            from { width: 0 !important; }
+        }
+        .scale-bar span {
+            font-size: 0.78rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        }
+        .scale-bar.green { background: linear-gradient(90deg, #A2C9A0 0%, #88B383 100%); }
+        .scale-bar.yellow { background: linear-gradient(90deg, #ECCC7E 0%, #D9A93C 100%); }
+        .scale-bar.orange { background: linear-gradient(90deg, #ECA88E 0%, #D87A5E 100%); }
+        .scale-signal { font-size: 1.15rem; width: 28px; text-align: center; }
+        .scale-category {
+            width: 70px;
+            font-size: 0.78rem;
+            color: var(--text-soft);
+            text-align: right;
+            font-weight: 500;
+        }
+        .scale-legend {
+            margin-top: 1rem;
+            padding-top: 0.9rem;
+            border-top: 1px solid var(--border-soft);
+            font-size: 0.8rem;
+            color: var(--text-soft);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        /* ─────────── Comments ─────────── */
+        .comment {
+            font-style: italic;
+            color: var(--text-soft);
+            margin: 0.5rem 0;
+            padding: 0.6rem 0.9rem;
+            background: var(--cream);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+        }
+
+        /* ─────────── Chat ─────────── */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 480px;
+        }
+        .example-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            padding: 0.9rem 1.2rem 0.4rem;
+        }
+        .chip {
+            padding: 0.42rem 0.85rem;
+            border-radius: 999px;
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+        .chip:hover {
+            border-color: var(--primary);
+            background: white;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.8rem 1.2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+            max-height: 480px;
+        }
+        .chat-empty {
+            padding: 2rem 1.2rem 1rem;
+            text-align: center;
+            color: var(--text-light);
+        }
+        .chat-empty p { line-height: 1.7; }
+        .chat-msg {
+            max-width: 82%;
+            padding: 0.85rem 1.05rem;
+            border-radius: 16px;
+            font-size: 0.92rem;
+            line-height: 1.7;
+            animation: msg-in 0.3s ease;
+        }
+        @keyframes msg-in {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+        .chat-msg.assistant {
+            align-self: flex-start;
+            background: var(--primary-soft);
+            color: var(--text);
+            border-bottom-left-radius: 6px;
+            border: 1px solid var(--border-soft);
+        }
+        .chat-input-wrap {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.9rem 1.2rem;
+            border-top: 1px solid var(--border-soft);
+            background: var(--cream);
+        }
+        .chat-input {
+            flex: 1;
+            padding: 0.7rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.92rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: white;
+        }
+        .chat-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        .chat-input:disabled { background: #f5f5f5; }
+
+        /* ─────────── Care signal banner ─────────── */
+        .care-banner {
+            margin: 0.9rem 1.2rem 0;
+            padding: 1rem 1.1rem 1rem 1.3rem;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            line-height: 1.65;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            animation: fade-up 0.4s ease;
+            position: relative;
+        }
+        .care-banner::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            border-radius: var(--radius) 0 0 var(--radius);
+        }
+        .care-banner.warning {
+            background: linear-gradient(135deg, #FBF1D8 0%, #FAF6F0 100%);
+            border: 1px solid #E8C66B;
+            color: #6B5414;
+        }
+        .care-banner.warning::before { background: #D9A93C; }
+        .care-banner.danger {
+            background: linear-gradient(135deg, #F9E2D8 0%, #FBE9DC 100%);
+            border: 1px solid #D87A5E;
+            color: #7A2A14;
+        }
+        .care-banner.danger::before { background: #D87A5E; }
+        .care-banner .body { flex: 1; }
+        .care-banner .title { font-weight: 700; margin-bottom: 0.3rem; font-size: 0.95rem; }
+        .care-banner .actions { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
+        .care-banner button {
+            padding: 0.45rem 0.95rem;
+            border: 1px solid currentColor;
+            background: rgba(255,255,255,0.7);
+            color: inherit;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .care-banner button:hover { background: white; }
+        .care-banner .dismiss {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            line-height: 1;
+            opacity: 0.5;
+            cursor: pointer;
+            padding: 0;
+            margin-top: -2px;
+        }
+        .care-banner .dismiss:hover { opacity: 1; }
+
+        /* ─────────── Markdown rendering ─────────── */
+        .md-content { line-height: 1.9; font-size: 0.95rem; color: var(--text); }
+        .md-content h3 {
+            color: var(--primary-dark);
+            margin: 1.3rem 0 0.6rem;
+            font-size: 1.08rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        .md-content h3:first-child { margin-top: 0; }
+        .md-content strong { color: var(--text); font-weight: 700; }
+        .md-content ul, .md-content ol {
+            padding-left: 0;
+            margin: 0.5rem 0;
+            list-style: none;
+        }
+        .md-content li {
+            margin: 0.55rem 0;
+            line-height: 1.75;
+            padding-left: 0;
+        }
+        .md-content li::marker { content: ''; }
+        /* Q&A 채팅 메시지 안의 list도 동일하게 */
+        .chat-msg.assistant ul, .chat-msg.assistant ol {
+            padding-left: 0;
+            margin: 0.5rem 0;
+            list-style: none;
+        }
+        .chat-msg.assistant li {
+            margin: 0.55rem 0;
+            line-height: 1.75;
+            padding-left: 0;
+        }
+        .chat-msg.assistant li::marker { content: ''; }
+        .md-content p { margin: 0.5rem 0; }
+        .md-content blockquote {
+            border-left: 3px solid var(--accent);
+            padding: 0.4rem 1rem;
+            margin: 0.8rem 0;
+            background: var(--cream);
+            border-radius: 0 8px 8px 0;
+            color: var(--text-soft);
+            font-size: 0.9rem;
+        }
+
+        /* ─────────── Disclaimer ─────────── */
+        .disclaimer {
+            background: var(--cream);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 0.7rem 0.95rem;
+            font-size: 0.85rem;
+            color: var(--text-soft);
+            margin-top: 1rem;
+            line-height: 1.6;
+        }
+
+        /* ─────────── Easy report — 계층 카드 구조 ─────────── */
+        .report-section {
+            margin-bottom: 1.3rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem 1.4rem;
+            box-shadow: 0 1px 2px rgba(45,58,58,0.04);
+        }
+        .report-section .section-title {
+            margin: 0 0 0.9rem 0;
+            color: var(--primary-dark);
+            font-size: 1.06rem;
+            font-weight: 700;
+            padding-bottom: 0.55rem;
+            border-bottom: 2px solid var(--primary-soft);
+            letter-spacing: -0.01em;
+        }
+        .report-section .section-intro {
+            font-size: 0.95rem;
+            line-height: 1.75;
+            color: var(--text);
+            margin-bottom: 0.9rem;
+        }
+        .report-subsection {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 0.85rem;
+            box-shadow: 0 1px 2px rgba(45,58,58,0.04);
+        }
+        .report-subsection:last-child { margin-bottom: 0; }
+        .report-subsection .sub-title {
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            font-size: 1.05rem;
+            font-weight: 700;
+            padding: 0.7rem 1.1rem;
+            margin: 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: baseline;
+            gap: 0.55rem;
+            flex-wrap: wrap;
+            letter-spacing: -0.01em;
+        }
+        .report-subsection .sub-title .signal {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--primary-dark);
+            opacity: 0.75;
+            background: rgba(255,255,255,0.55);
+            padding: 0.12rem 0.55rem;
+            border-radius: 999px;
+        }
+        .report-subsection .sub-body {
+            padding: 0.95rem 1.15rem 1.05rem;
+        }
+        .report-subsection .sub-body p {
+            margin: 0.55rem 0;
+            line-height: 1.75;
+            color: var(--text);
+            font-size: 0.93rem;
+        }
+        .report-subsection .sub-body p:first-child { margin-top: 0; }
+        .report-subsection .sub-body p:last-child { margin-bottom: 0; }
+
+        /* ─────────── Follow-up suggestion chips ─────────── */
+        .followup-row {
+            margin-top: 0.85rem;
+            padding-top: 0.7rem;
+            border-top: 1px dashed var(--border-soft);
+        }
+        .followup-label {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            margin-bottom: 0.45rem;
+            font-weight: 500;
+        }
+        .followup-chips {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .followup-chip {
+            text-align: left;
+            background: var(--primary-soft);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.55rem 0.85rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.86rem;
+            line-height: 1.5;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .followup-chip:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+        .followup-chip:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ─────────── Feedback buttons ─────────── */
+        .feedback-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+            padding-top: 0.5rem;
+            border-top: 1px dashed var(--border-soft);
+            font-size: 0.78rem;
+            color: var(--text-light);
+        }
+        .feedback-btn {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .feedback-btn:hover { background: var(--primary-soft); border-color: var(--primary); }
+        .feedback-btn.selected {
+            background: var(--primary-soft);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        /* ─────────── Streaming caret ─────────── */
+        .typing-caret {
+            display: inline-block;
+            width: 0.5em;
+            height: 1.05em;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            background: var(--primary);
+            border-radius: 1px;
+            animation: caret-blink 1s steps(2, start) infinite;
+        }
+        @keyframes caret-blink {
+            to { visibility: hidden; }
+        }
+
+        /* ─────────── Spinner ─────────── */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2.5px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─────────── Handoff memo (편지 느낌) ─────────── */
+        .handoff-section {
+            padding: 1.2rem 1.4rem;
+            border-top: 1px solid var(--border-soft);
+            background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%);
+        }
+        .handoff-promo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        .handoff-promo .promo-text {
+            font-size: 0.9rem;
+            color: var(--text-soft);
+            line-height: 1.5;
+        }
+        .handoff-promo .promo-text strong {
+            color: var(--text);
+            font-weight: 600;
+            display: block;
+            font-size: 0.95rem;
+            margin-bottom: 0.15rem;
+        }
+        .handoff-letter {
+            background: #FFFCF7;
+            background-image:
+                repeating-linear-gradient(
+                    transparent, transparent 28px,
+                    rgba(216, 122, 94, 0.06) 28px,
+                    rgba(216, 122, 94, 0.06) 29px
+                );
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.4rem 1.6rem 1.6rem;
+            margin-top: 0.8rem;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+        .handoff-letter::before {
+            content: '';
+            position: absolute;
+            top: 14px; right: 14px;
+            width: 56px; height: 56px;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            background: rgba(232, 168, 124, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .handoff-letter::after {
+            content: '맘이음';
+            position: absolute;
+            top: 28px; right: 14px;
+            width: 56px;
+            text-align: center;
+            font-family: 'Gowun Batang', serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.05em;
+            line-height: 1;
+        }
+        .handoff-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.9rem;
+            padding-right: 70px;
+        }
+        .handoff-title {
+            font-family: 'Gowun Batang', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            letter-spacing: -0.01em;
+        }
+        .handoff-actions {
+            display: flex;
+            gap: 0.4rem;
+        }
+        .handoff-actions button {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        /* ─────────── Responsive ─────────── */
+        @media (max-width: 768px) {
+            .header { padding: 1.6rem 1rem; }
+            .header h1 { font-size: 1.5rem; }
+            .container { padding: 1rem 0.8rem 3rem; }
+            .card { padding: 1.2rem 1.1rem; border-radius: 18px; }
+            .features { grid-template-columns: 1fr; }
+            .scores-grid { grid-template-columns: 1fr; }
+            .chat-msg { max-width: 92%; }
+            .child-info-card { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
+            .tabs { font-size: 0.85rem; }
+            .tab { padding: 0.55rem 0.6rem; font-size: 0.82rem; }
+            .scale-name { width: 110px; font-size: 0.85rem; }
+            .scale-category { width: 50px; }
+            .handoff-letter { padding: 1.2rem 1rem; }
+            .handoff-letter::before, .handoff-letter::after { display: none; }
+            .handoff-header { padding-right: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        // ────────────────────────────────────────
+        // API 호출
+        // ────────────────────────────────────────
+        const API = {
+            async upload(file) {
+                const form = new FormData();
+                form.append('file', file);
+                const res = await fetch('/api/upload', { method: 'POST', body: form });
+                if (!res.ok) throw new Error((await res.json()).detail);
+                return res.json();
+            },
+            async easyReportStream(reportContext, onChunk, onDone) {
+                const res = await fetch('/api/easy-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ report_context: reportContext }),
+                });
+                if (!res.ok) {
+                    let detail = '서버 오류';
+                    try { detail = (await res.json()).detail || detail; } catch {}
+                    throw new Error(detail);
+                }
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') { onDone(); return; }
+                            try {
+                                const parsed = JSON.parse(data);
+                                if (parsed.content) onChunk(parsed.content);
+                            } catch {}
+                        }
+                    }
+                }
+                onDone();
+            },
+            async chatStream(reportContext, history, question, onChunk, onDone) {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ report_context: reportContext, conversation_history: history, question }),
+                });
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') { onDone(); return; }
+                            try { onChunk(JSON.parse(data).content); } catch {}
+                        }
+                    }
+                }
+                onDone();
+            },
+            async careCheck(history) {
+                const res = await fetch('/api/care-signal-check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ conversation_history: history }),
+                });
+                if (!res.ok) return null;
+                return res.json();
+            },
+            async counselorHandoff(reportContext, history) {
+                const res = await fetch('/api/counselor-handoff', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ report_context: reportContext, conversation_history: history }),
+                });
+                if (!res.ok) throw new Error((await res.json()).detail);
+                return res.json();
+            },
+            async submitFeedback(rating, question, answer, comment) {
+                try {
+                    await fetch('/api/feedback', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rating, question, answer, comment }),
+                    });
+                } catch (e) { /* silent */ }
+            },
+            async simplifyClinical(interpretation, observations) {
+                const res = await fetch('/api/simplify-clinical', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ interpretation, observations }),
+                });
+                if (!res.ok) return null;
+                return res.json();
+            },
+        };
+
+        // ────────────────────────────────────────
+        // Helpers
+        // ────────────────────────────────────────
+        // 보고서 풀어보기 출력을 계층 구조로 파싱
+        // 큰 섹션(### 헤딩) → 안의 영역(**...**) → 영역 안의 단락들
+        function parseEasyReport(text) {
+            if (!text) return [];
+            const sections = [];
+            const lines = text.split('\n');
+            let curSection = null;
+            let curSub = null;
+            let buffer = [];
+
+            const pushBuffer = () => {
+                if (buffer.length === 0) return;
+                const content = buffer.join('\n').trim();
+                if (curSub) curSub.body += (curSub.body ? '\n\n' : '') + content;
+                else if (curSection) curSection.body += (curSection.body ? '\n\n' : '') + content;
+                buffer = [];
+            };
+            const flushSub = () => {
+                pushBuffer();
+                if (curSub) {
+                    curSection.subs.push(curSub);
+                    curSub = null;
+                }
+            };
+            const flushSection = () => {
+                flushSub();
+                if (curSection) {
+                    sections.push(curSection);
+                    curSection = null;
+                }
+            };
+
+            // 영역명 후보 — bold 마커 또는 "이름(괄호풀이)" 형식의 짧은 라인
+            const isAreaTitle = (s) => {
+                const t = s.trim();
+                if (!t) return null;
+                // ① bold 마커 형식 **제목** [신호등]
+                const bold = t.match(/^\*\*([^*]+)\*\*\s*(.*)$/);
+                if (bold) return { title: bold[1].trim(), signal: bold[2].trim() };
+                // ② "이름(괄호풀이)" + 선택적 신호등. 라인이 짧고 본문 패턴 아닐 때만
+                if (t.length > 50) return null;
+                // 본문 시작 패턴 제외 ("이 영역은", "우리 아이는" 등)
+                if (/^(이 영역|우리 아이|아이의|상담|또래|혼자|두통|슬픔|걱정|연령|이는|학교|친구|새로운|보호자|환경|현재|즉각|개별|이번|전반|전체적)/.test(t)) return null;
+                // 한국어 + 괄호 형식
+                const labeled = t.match(/^([가-힣A-Za-z/·\s]+?)\s*\(([^)]+)\)\s*([🟢🟡🟠]*)\s*$/);
+                if (labeled) return {
+                    title: `${labeled[1].trim()}(${labeled[2].trim()})`,
+                    signal: labeled[3].trim(),
+                };
+                return null;
+            };
+
+            for (const raw of lines) {
+                const line = raw;
+                const h3 = line.match(/^###\s+(.+)/);
+                if (h3) {
+                    flushSection();
+                    curSection = { title: h3[1].trim(), body: '', subs: [] };
+                    continue;
+                }
+                const area = isAreaTitle(line);
+                if (area && curSection) {
+                    flushSub();
+                    curSub = { title: area.title, signal: area.signal, body: '' };
+                } else {
+                    buffer.push(line);
+                }
+            }
+            flushSection();
+            return sections;
+        }
+
+        // 답변에서 '이런 것도 궁금하실 수 있어요:' 섹션을 본문과 분리
+        function splitFollowups(text) {
+            if (!text) return { body: '', followups: [] };
+            const marker = /이런\s*것도\s*궁금하실\s*수\s*있어요\s*[:：]?/;
+            const m = text.match(marker);
+            if (!m) return { body: text, followups: [] };
+            const idx = text.search(marker);
+            const body = text.slice(0, idx).trim();
+            // 마커 다음 텍스트에서 '-', '•', '*' 또는 '숫자.'로 시작하는 줄을 추출
+            const tail = text.slice(idx).split('\n').slice(1);
+            const followups = [];
+            for (const raw of tail) {
+                const ln = raw.trim();
+                if (!ln) continue;
+                const itemMatch = ln.match(/^[\-•*·]\s*(.+?)\s*$/) || ln.match(/^\d+\.\s*(.+?)\s*$/);
+                if (itemMatch) {
+                    followups.push(itemMatch[1].trim().replace(/^["“”]|["“”]$/g, ''));
+                } else if (followups.length === 0 && ln.endsWith('?')) {
+                    // bullet 없는 줄도 질문이면 채택
+                    followups.push(ln.replace(/^["“”]|["“”]$/g, ''));
+                }
+            }
+            return { body, followups };
+        }
+
+        // 인계 메모 전용 후처리 — 헤딩 이모지 + "(3가지)" + 번호 매기기 정리
+        function cleanHandoffNote(text) {
+            if (!text) return '';
+            return text
+                // em-dash·en-dash → 일반 hyphen
+                .replace(/[—–]/g, '-')
+                // 헤딩 라인의 이모지 제거 (### 📋 → ###)
+                .replace(/^(#{1,6}\s*)[📋💭🔍🎯⚠️📌📊✨🌱🤝]+\s*/gm, '$1')
+                // "(3가지)", "(N개)" 같은 카운트 제거
+                .replace(/(상담\s*추천\s*우선\s*화제)\s*\(\d+\s*가지?\)/g, '$1')
+                // "1. 2. 3." 번호 매기기 → "- " bullet (인계 메모 헤딩 다음 4줄 안에서만)
+                .replace(/(### [^\n]*\n(?:[^\n#]*\n)?)((?:\s*\d+\.\s+[^\n]+\n?){2,})/g,
+                    (m, head, body) => head + body.replace(/^\s*\d+\.\s+/gm, '- '))
+                // 잔여 이모지 제거
+                .replace(/[📎💭📋🔍🎯⚠️📌📊✨]/g, '')
+                .trim();
+        }
+
+        // 리스트 일관성 보정 — 일부 라인만 bullet이 있고 다른 라인이 빠진 경우, 영역명: 패턴 라인에 - 추가
+        function fixMixedBullets(text) {
+            const lines = text.split('\n');
+            const out = [];
+            let inList = false;
+            for (const line of lines) {
+                const trimmed = line.trim();
+                const isBullet = /^[-•*]\s+/.test(trimmed);
+                const isEmpty = trimmed === '';
+                if (isBullet) {
+                    inList = true;
+                    out.push(line);
+                } else if (isEmpty) {
+                    inList = false;
+                    out.push(line);
+                } else if (inList && /^(\*\*[^*]+\*\*|[가-힣A-Za-z·\s/()]{2,40})\s*[:：]/.test(trimmed)) {
+                    // 리스트 흐름 안에서 "이름: ..." 형식 라인 → bullet 누락으로 보고 - 추가
+                    out.push('- ' + trimmed);
+                } else {
+                    inList = false;
+                    out.push(line);
+                }
+            }
+            return out.join('\n');
+        }
+
+        // LLM 출력 후처리 — 라벨 제거 + 단락 빈 줄 강제 (마크다운 줄바꿈 보장)
+        function cleanLLMOutput(text) {
+            if (!text) return '';
+            let out = text
+                // em-dash·en-dash → 일반 hyphen으로 통일
+                .replace(/[—–]/g, '-')
+                // 답변 본문 안의 "1. 2. 3." 번호 매기기 → "- " bullet 통일
+                .replace(/^\s*\d+\.\s+/gm, '- ');
+            // 일부 라인만 bullet인 mixed list 보정
+            out = fixMixedBullets(out);
+            return out
+                // 이모지 흔적 제거 (LLM이 가끔 가이드 무시할 때 보험)
+                .replace(/📎\s*/g, '')
+                .replace(/💭\s*/g, '')
+                // 본문 라벨 제거 ("- 어떤 영역인가요: " 등)
+                .replace(/^[\-•·]?\s*어떤 영역인가요\s*[:：]\s*/gm, '')
+                .replace(/^[\-•·]?\s*우리 아이는\s*[:：]\s*/gm, '')
+                .replace(/^[\-•·]?\s*함께 살펴볼 점\s*[:：]\s*/gm, '')
+                .replace(/^[\-•·]?\s*T점수와 그 의미\s*[:：]\s*/gm, '')
+                .replace(/^[\-•·]?\s*일상에서의 모습\s*[:：]\s*/gm, '')
+                // 근거·유사 질문 앞에 빈 줄 강제 (마크다운 단락 구분)
+                .replace(/(\S)[ \t]*\n?(?=근거\s*[:：])/g, '$1\n\n')
+                .replace(/(\S)[ \t]*\n?(?=이런\s*것도\s*궁금하실)/g, '$1\n\n')
+                // 척도 헤딩(**...**) 앞뒤로 빈 줄 보강
+                .replace(/(\S)\n(\*\*[^\n*]+\*\*)/g, '$1\n\n$2')
+                // 연속 공백 줄 3개 이상은 2개로 정리
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+        }
+
+        const scoreClass = (cat) => cat === '정상' ? 'normal' : cat === '준임상' ? 'subclinical' : 'clinical';
+        const barClass = (cat) => cat === '정상' ? 'green' : cat === '준임상' ? 'yellow' : 'orange';
+        // 보고서 원문 용어를 보호자 관점 표현으로 변환 (원문도 부제로 함께 표기)
+        const friendlyCategory = (cat) => ({
+            '정상': '또래와 비슷한 수준',
+            '준임상': '또래보다 조금 높은 편',
+            '임상': '상담에서 함께 확인 권장',
+        })[cat] || cat;
+
+        // ────────────────────────────────────────
+        // 메인 앱
+        // ────────────────────────────────────────
+        function App() {
+            const [reportData, setReportData] = useState(null);
+            const [reportContext, setReportContext] = useState('');
+            const [activeTab, setActiveTab] = useState('report');
+            const [easyReport, setEasyReport] = useState('');
+            const [easyLoading, setEasyLoading] = useState(false);
+            const [messages, setMessages] = useState([]);
+            const [chatInput, setChatInput] = useState('');
+            const [chatLoading, setChatLoading] = useState(false);
+            const [uploading, setUploading] = useState(false);
+            const [apiKeyOk, setApiKeyOk] = useState(null);
+            const [careSignal, setCareSignal] = useState(null);
+            const [careDismissed, setCareDismissed] = useState(false);
+            const [handoffNote, setHandoffNote] = useState('');
+            const [handoffLoading, setHandoffLoading] = useState(false);
+            const [clinicalSummary, setClinicalSummary] = useState(null);
+            const [clinicalLoading, setClinicalLoading] = useState(false);
+            const [showOriginalInterp, setShowOriginalInterp] = useState(false);
+            const chatEndRef = useRef(null);
+            const fileRef = useRef(null);
+
+            useEffect(() => {
+                fetch('/api/health').then(r => r.json()).then(d => setApiKeyOk(d.openai_key_configured)).catch(() => setApiKeyOk(false));
+            }, []);
+
+            useEffect(() => {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages]);
+
+            async function handleUpload(file) {
+                if (!file) return;
+                setUploading(true);
+                setClinicalSummary(null);
+                try {
+                    const data = await API.upload(file);
+                    setReportData(data);
+                    setReportContext(data.report_context);
+                    setEasyReport('');
+                    setMessages([]);
+                    setCareSignal(null);
+                    setCareDismissed(false);
+                    setHandoffNote('');
+                    setActiveTab('report');
+
+                    // 임상가 종합 해석·관찰 소견을 보호자 친화 풀이로 자동 변환 (백그라운드)
+                    const hasInterp = data.comprehensive_interpretation && data.comprehensive_interpretation.length > 0;
+                    const hasObs = data.observations && data.observations.length > 0;
+                    if (hasInterp || hasObs) {
+                        setClinicalLoading(true);
+                        API.simplifyClinical(
+                            data.comprehensive_interpretation || [],
+                            data.observations || [],
+                        ).then((result) => {
+                            if (result && result.success && result.summary) {
+                                setClinicalSummary({
+                                    summary: result.summary,
+                                    key_points: result.key_points || [],
+                                });
+                            }
+                        }).catch(() => {/* silent */}).finally(() => setClinicalLoading(false));
+                    }
+                } catch (e) {
+                    alert('보고서 업로드 실패: ' + e.message);
+                } finally {
+                    setUploading(false);
+                }
+            }
+
+            async function handleGenerateReport() {
+                setEasyLoading(true);
+                setEasyReport('');
+                let full = '';
+                try {
+                    await API.easyReportStream(
+                        reportContext,
+                        (chunk) => {
+                            full += chunk;
+                            setEasyReport(full);
+                        },
+                        () => setEasyLoading(false),
+                    );
+                } catch (e) {
+                    alert('보고서 생성 실패: ' + e.message);
+                    setEasyLoading(false);
+                }
+            }
+
+            async function handleHandoff() {
+                if (handoffLoading) return;
+                setHandoffLoading(true);
+                setHandoffNote('');
+                try {
+                    const data = await API.counselorHandoff(reportContext, messages);
+                    setHandoffNote(data.content);
+                } catch (e) {
+                    alert('인계 메모 생성 실패: ' + e.message);
+                } finally {
+                    setHandoffLoading(false);
+                }
+            }
+
+            async function handleSendChat(question) {
+                if (!question.trim() || chatLoading) return;
+                const q = question.trim();
+                setChatInput('');
+                const newMsgs = [...messages, { role: 'user', content: q }];
+                setMessages([...newMsgs, { role: 'assistant', content: '' }]);
+                setChatLoading(true);
+
+                let fullResponse = '';
+                const history = newMsgs.slice(0, -1);
+
+                await API.chatStream(
+                    reportContext, history, q,
+                    (chunk) => {
+                        fullResponse += chunk;
+                        setMessages([...newMsgs, { role: 'assistant', content: fullResponse }]);
+                    },
+                    async () => {
+                        const finalMsgs = [...newMsgs, { role: 'assistant', content: fullResponse }];
+                        setMessages(finalMsgs);
+                        setChatLoading(false);
+                        try {
+                            const signal = await API.careCheck(finalMsgs);
+                            if (signal && (signal.level === 'warning' || signal.level === 'danger')) {
+                                setCareSignal(signal);
+                                setCareDismissed(false);
+                            }
+                        } catch (e) { /* silent */ }
+                    }
+                );
+            }
+
+            // ────────────────────────────────────────
+            // 렌더링
+            // ────────────────────────────────────────
+            return (
+                <div>
+                    {/* Header */}
+                    <header className="header">
+                        <div className="header-inner">
+                            <h1>맘이음</h1>
+                            <p className="tagline">검사 결과를 보호자와 함께 살펴드립니다</p>
+                        </div>
+                    </header>
+
+                    {/* Status bar */}
+                    <div className="status-bar">
+                        <span style={{color: 'var(--text-light)'}}>OpenAI API:</span>
+                        {apiKeyOk === null ? (
+                            <span className="status" style={{background: '#F0EAE0', color: 'var(--text-light)'}}>
+                                <span className="dot"/>확인 중…
+                            </span>
+                        ) : apiKeyOk ? (
+                            <span className="status ok"><span className="dot"/>연결됨</span>
+                        ) : (
+                            <span className="status missing"><span className="dot"/>환경변수 필요</span>
+                        )}
+                    </div>
+
+                    <div className="container">
+                        {!reportData ? (
+                            /* ─── Welcome / Upload ─── */
+                            <div>
+                                <div className="card">
+                                    <div
+                                        className="upload-zone"
+                                        onClick={() => fileRef.current?.click()}
+                                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('dragging'); }}
+                                        onDragLeave={(e) => e.currentTarget.classList.remove('dragging')}
+                                        onDrop={(e) => { e.preventDefault(); e.currentTarget.classList.remove('dragging'); handleUpload(e.dataTransfer.files[0]); }}
+                                    >
+                                        {uploading ? (
+                                            <div className="spinner" style={{width:32,height:32,borderWidth:3, marginBottom: '0.8rem'}}/>
+                                        ) : (
+                                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{marginBottom: '0.7rem', color: 'var(--primary)'}}>
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <polyline points="14 2 14 8 20 8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <line x1="9" y1="13" x2="15" y2="13" strokeLinecap="round"/>
+                                                <line x1="9" y1="17" x2="13" y2="17" strokeLinecap="round"/>
+                                            </svg>
+                                        )}
+                                        <p><strong>CBCL 검사 결과 PDF</strong>를 끌어다 놓거나 클릭해서 올려주세요</p>
+                                        <input ref={fileRef} type="file" accept=".pdf" onChange={(e) => handleUpload(e.target.files[0])} />
+                                    </div>
+                                </div>
+
+                                <div className="welcome-wrap">
+                                    <h2>검사 결과를 함께 살펴봐요</h2>
+                                    <p>전문 용어가 가득한 보고서, 혼자 보시기 어려우셨죠.<br/>맘이음이 보호자 곁에서 차근차근 짚어드립니다.</p>
+                                    <div className="features">
+                                        <div className="feature-card">
+                                            <h4>보고서 풀어보기</h4>
+                                            <p>T점수·백분위·내재화/외현화 같은 보고서 용어를 보호자 관점에서 다시 정리해드립니다</p>
+                                        </div>
+                                        <div className="feature-card">
+                                            <h4>궁금한 점 물어보기</h4>
+                                            <p>보고서에 대해 궁금한 점을 편하게 질문하실 수 있어요</p>
+                                        </div>
+                                        <div className="feature-card">
+                                            <h4>보호자 마음 살피기</h4>
+                                            <p>보호자님의 부담이 큰 신호가 보이면 상담 일정을 앞당겨 드릴 수 있도록 안내해요</p>
+                                        </div>
+                                        <div className="feature-card">
+                                            <h4>상담 전 인계 메모</h4>
+                                            <p>지금까지의 대화를 정리해 상담 선생님께 미리 전해드릴 수 있어요</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            /* ─── Main content ─── */
+                            <div>
+                                {/* Child info */}
+                                <div className="card child-info-card">
+                                    <div>
+                                        <div className="label">검사 대상</div>
+                                        <div className="name">
+                                            {reportData.child_info.name} ({reportData.child_info.gender} · {reportData.child_info.age})
+                                        </div>
+                                        <div className="meta">
+                                            검사일 {reportData.child_info.test_date} &nbsp;·&nbsp; 규준 {reportData.child_info.norm_group}
+                                        </div>
+                                    </div>
+                                    <button className="btn btn-outline" onClick={() => { setReportData(null); setEasyReport(''); setMessages([]); setCareSignal(null); setHandoffNote(''); }}>
+                                        다른 보고서 보기
+                                    </button>
+                                </div>
+
+                                {/* Tabs */}
+                                <div className="tabs">
+                                    <button className={`tab ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>검사 결과</button>
+                                    <button className={`tab ${activeTab === 'easy' ? 'active' : ''}`} onClick={() => setActiveTab('easy')}>보고서 풀어보기</button>
+                                    <button className={`tab ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>궁금한 점 묻기</button>
+                                </div>
+
+                                {/* ─── Tab: 검사 결과 ─── */}
+                                {activeTab === 'report' && (
+                                    <div>
+                                        {/* 가장 먼저: 임상가 종합 해석을 보호자 친화 풀이로 변환한 카드 */}
+                                        {(clinicalLoading || clinicalSummary) && (
+                                            <div className="card" style={{borderLeft:'4px solid var(--primary)'}}>
+                                                <h3>이 검사 결과를 한눈에</h3>
+                                                {clinicalLoading && !clinicalSummary && (
+                                                    <div style={{display:'flex', alignItems:'center', gap:'0.6rem', padding:'0.6rem 0', color:'var(--text-soft)'}}>
+                                                        <div className="spinner"/>
+                                                        <span>임상가 평어를 보호자 관점에서 풀어드리고 있어요…</span>
+                                                    </div>
+                                                )}
+                                                {clinicalSummary && clinicalSummary.summary && (
+                                                    <>
+                                                        <p style={{lineHeight:1.85, fontSize:'0.97rem', margin:'0.4rem 0 1rem', color:'var(--text)'}}>
+                                                            {clinicalSummary.summary}
+                                                        </p>
+                                                        {clinicalSummary.key_points && clinicalSummary.key_points.length > 0 && (
+                                                            <div style={{padding:'0.9rem 1.1rem', background:'#F0F7F3',
+                                                                          border:'1px solid #C8DCD2', borderRadius:'10px'}}>
+                                                                <div style={{fontSize:'0.82rem', fontWeight:600, color:'#467566', marginBottom:'0.5rem'}}>
+                                                                    함께 짚어볼 만한 점
+                                                                </div>
+                                                                <ul style={{margin:0, paddingLeft:'1.2rem', fontSize:'0.9rem',
+                                                                              color:'var(--text)', lineHeight:1.75}}>
+                                                                    {clinicalSummary.key_points.map((kp, i) => <li key={i}>{kp}</li>)}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                        <div className="disclaimer" style={{marginTop:'0.9rem'}}>
+                                                            참고. 위 내용은 보고서의 임상가 종합 해석·영역별 관찰 소견을 AI가 보호자 관점에서 다시 정리한 것입니다.
+                                                            진단·처방이 아니며, 자세한 해석은 상담 선생님과 함께 확인해 주세요.
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="card">
+                                            <h3>크게 세 가지로 본 결과</h3>
+                                            <div className="scores-grid">
+                                                {[
+                                                    {
+                                                        label: '감정·기분의 영역',
+                                                        sub: '보고서 표기: 내재화 문제',
+                                                        desc: '걱정·위축·신체 호소 등 안으로 드러나는 어려움',
+                                                        data: reportData.composite_scores.internalizing,
+                                                    },
+                                                    {
+                                                        label: '행동·표현의 영역',
+                                                        sub: '보고서 표기: 외현화 문제',
+                                                        desc: '다툼·규칙 위반·공격성 등 밖으로 드러나는 어려움',
+                                                        data: reportData.composite_scores.externalizing,
+                                                    },
+                                                    {
+                                                        label: '전체 합계',
+                                                        sub: '보고서 표기: 총 문제행동',
+                                                        desc: '두 영역을 함께 종합한 지표',
+                                                        data: reportData.composite_scores.total,
+                                                    },
+                                                ].map(({ label, sub, desc, data }) => (
+                                                    <div key={label} className={`score-card ${scoreClass(data.category)}`}>
+                                                        <div className="label-main">{label}</div>
+                                                        <div className="label-sub">{sub}</div>
+                                                        <div className="desc">{desc}</div>
+                                                        <div className="value-row">
+                                                            <div className="value"><span className="t-prefix">T점수</span>{data.t_score}</div>
+                                                            <div className="category-pill">{friendlyCategory(data.category)}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="card">
+                                            <h3>여덟 가지 영역별로 본 결과</h3>
+                                            <p style={{color:'var(--text-soft)', fontSize:'0.85rem', marginBottom:'0.7rem'}}>
+                                                척도는 <b>내재화 증후군</b>(감정 안쪽), <b>혼합 증후군</b>(중간), <b>외현화 증후군</b>(행동 표현)의 세 그룹으로 묶여 있습니다.
+                                            </p>
+                                            {reportData.scales.map((s) => (
+                                                <div key={s.name} className="scale-item">
+                                                    <div className="scale-name">{s.name}</div>
+                                                    <div className="scale-bar-wrap">
+                                                        <div
+                                                            className={`scale-bar ${barClass(s.category)}`}
+                                                            style={{ width: `${Math.min(100, (s.t_score / 80) * 100)}%` }}
+                                                        >
+                                                            <span>{s.t_score}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="scale-signal">{s.signal}</div>
+                                                    <div className="scale-category">{s.category}</div>
+                                                </div>
+                                            ))}
+                                            <div className="scale-legend">
+                                                <span>🟢 또래와 비슷 (T&lt;60)</span>
+                                                <span>🟡 또래보다 조금 높음 (T 60-69)</span>
+                                                <span>🟠 상담에서 함께 확인 (T≥70)</span>
+                                            </div>
+                                        </div>
+
+                                        {/* 주요 관찰 소견 (Ⅴ) — 임상가 평어 */}
+                                        {reportData.observations && reportData.observations.length > 0 && (
+                                            <div className="card">
+                                                <h3>임상가 주요 관찰 소견</h3>
+                                                <p style={{color:'var(--text-soft)', fontSize:'0.86rem', marginBottom:'0.9rem'}}>
+                                                    검사자가 영역별로 관찰한 주요 소견입니다. 임상 진단이 아닌 관찰 메모이며, 상담 시 함께 살펴보시면 도움이 됩니다.
+                                                </p>
+                                                <div style={{display:'flex', flexDirection:'column', gap:'0.7rem'}}>
+                                                {reportData.observations.map((o, i) => (
+                                                    <div key={i} style={{padding:'0.8rem 1rem', background:'#FAF6F0',
+                                                                          border:'1px solid #E8D9C2', borderRadius:'10px'}}>
+                                                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', flexWrap:'wrap', gap:'0.5rem'}}>
+                                                            <strong style={{color:'var(--text)', fontSize:'0.95rem'}}>{o.area}</strong>
+                                                            <span style={{fontSize:'0.82rem', color:'var(--text-light)'}}>
+                                                                T={o.t_score} · {o.classification}
+                                                            </span>
+                                                        </div>
+                                                        {o.notes && o.notes.length > 0 && (
+                                                            <ul style={{margin:'0.4rem 0 0 0', paddingLeft:'1.2rem', fontSize:'0.86rem',
+                                                                          color:'var(--text-soft)', lineHeight:1.65}}>
+                                                                {o.notes.map((n, j) => <li key={j}>{n}</li>)}
+                                                            </ul>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 종합 해석 (Ⅵ) — 임상가 종합 평가 */}
+                                        {reportData.comprehensive_interpretation && reportData.comprehensive_interpretation.length > 0 && (
+                                            <div className="card">
+                                                <h3>임상가 종합 해석</h3>
+                                                <div style={{padding:'1rem 1.2rem', background:'#F0F7F3',
+                                                              border:'1px solid #C8DCD2', borderRadius:'10px',
+                                                              fontSize:'0.92rem', lineHeight:1.75, color:'var(--text)'}}>
+                                                    {reportData.comprehensive_interpretation.map((para, i) => (
+                                                        <p key={i} style={{margin: i === 0 ? '0 0 0.8rem' : '0 0 0.8rem'}}>{para}</p>
+                                                    ))}
+                                                </div>
+                                                <div className="disclaimer" style={{marginTop:'0.8rem'}}>
+                                                    참고. 위 해석은 검사 보고서에 포함된 임상가 의견을 그대로 옮긴 것이며, 진단·처방이 아닙니다.
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 특수 척도 (Ⅳ) — SPECIAL SCALES */}
+                                        {reportData.special_scales && reportData.special_scales.length > 0 && (
+                                            <div className="card">
+                                                <h3>특수 척도 (SPECIAL SCALES)</h3>
+                                                <p style={{color:'var(--text-soft)', fontSize:'0.86rem', marginBottom:'0.9rem'}}>
+                                                    한국 아동에게 특화된 추가 척도입니다. 본 검사에서의 실시 여부와 권장 사항을 확인하세요.
+                                                </p>
+                                                <div style={{display:'flex', flexDirection:'column', gap:'0.7rem'}}>
+                                                    {reportData.special_scales.map((s, i) => {
+                                                        const isPending = s.status === '미실시';
+                                                        return (
+                                                            <div key={i} style={{padding:'0.85rem 1.05rem', background:'white',
+                                                                                  border:'1px solid var(--border)', borderRadius:'10px',
+                                                                                  fontSize:'0.9rem'}}>
+                                                                {/* 척도명 + 연령 + 상태 chip 인라인 */}
+                                                                <div style={{display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap', marginBottom:'0.4rem'}}>
+                                                                    <strong style={{fontSize:'0.96rem', color:'var(--text)'}}>{s.name}</strong>
+                                                                    <span style={{display:'inline-flex', alignItems:'center',
+                                                                                    fontSize:'0.78rem', padding:'0.18rem 0.55rem',
+                                                                                    background:'#F0F7F3', color:'#467566',
+                                                                                    border:'1px solid #C8DCD2', borderRadius:'999px', fontWeight:500}}>
+                                                                        {s.age_range}
+                                                                    </span>
+                                                                    <span style={{display:'inline-flex', alignItems:'center',
+                                                                                    fontSize:'0.78rem', padding:'0.18rem 0.55rem',
+                                                                                    background: isPending ? '#FBF5E5' : '#F0F7F3',
+                                                                                    color: isPending ? '#7A5614' : '#467566',
+                                                                                    border: isPending ? '1px solid #E8C66B' : '1px solid #C8DCD2',
+                                                                                    borderRadius:'999px', fontWeight:600}}>
+                                                                        {s.status}
+                                                                    </span>
+                                                                </div>
+                                                                <div style={{color:'var(--text-soft)', lineHeight:1.7}}>{s.note}</div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {reportData.parent_comments.length > 0 && (
+                                            <div className="card">
+                                                <h3>보호자께서 검사지에 적어주신 의견</h3>
+                                                {reportData.parent_comments.map((c, i) => (
+                                                    <div key={i} className="comment">"{c}"</div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* ─── Tab: 보고서 풀어보기 ─── */}
+                                {activeTab === 'easy' && (
+                                    <div className="card">
+                                        {!easyReport && !easyLoading ? (
+                                            <div style={{textAlign:'center', padding:'2.4rem 1rem 1.6rem'}}>
+                                                <p style={{marginBottom:'1.6rem', color:'var(--text-soft)', lineHeight: 1.7, fontSize: '0.96rem'}}>
+                                                    검사 보고서를 보호자 관점에서 다시 정리해드립니다.<br/>
+                                                    <span style={{fontSize: '0.85rem', color: 'var(--text-light)'}}>전문 용어는 일상어로 풀이하고, 중요한 부분은 상담 선생님과 함께 확인할 수 있도록 짚어드려요.</span>
+                                                </p>
+                                                <button
+                                                    className="btn btn-primary"
+                                                    onClick={handleGenerateReport}
+                                                    style={{padding: '0.8rem 1.6rem'}}
+                                                >
+                                                    보고서 풀어보기
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                {easyLoading && !easyReport && (
+                                                    <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '1rem 0', color: 'var(--text-soft)'}}>
+                                                        <div className="spinner"/>
+                                                        <span>차근차근 정리하고 있어요…</span>
+                                                    </div>
+                                                )}
+                                                {easyReport && (() => {
+                                                    const sections = parseEasyReport(cleanLLMOutput(easyReport));
+                                                    return (
+                                                        <div className="streaming-content">
+                                                            {sections.map((sec, si) => (
+                                                                <div key={si} className="report-section">
+                                                                    <h4 className="section-title">{sec.title}</h4>
+                                                                    {sec.body && (
+                                                                        <div className="section-intro"
+                                                                             dangerouslySetInnerHTML={{__html: marked.parse(sec.body)}} />
+                                                                    )}
+                                                                    {sec.subs.map((sub, ki) => (
+                                                                        <div key={ki} className="report-subsection">
+                                                                            <div className="sub-title">
+                                                                                {sub.title}
+                                                                                {sub.signal && <span className="signal">{sub.signal}</span>}
+                                                                            </div>
+                                                                            <div className="sub-body"
+                                                                                 dangerouslySetInnerHTML={{__html: marked.parse(sub.body)}} />
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ))}
+                                                            {easyLoading && <span className="typing-caret"></span>}
+                                                        </div>
+                                                    );
+                                                })()}
+                                                {!easyLoading && (
+                                                    <>
+                                                        <div className="disclaimer">
+                                                            참고. 이 내용은 AI가 보고서를 보호자 관점에서 다시 정리한 보조 자료입니다. 임상적 해석은 상담 선생님과 함께 확인해 주세요.
+                                                        </div>
+                                                        <div style={{marginTop:'1rem', textAlign:'right'}}>
+                                                            <button className="btn btn-outline" onClick={() => setEasyReport('')}>다시 정리하기</button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* ─── Tab: Q&A 챗봇 ─── */}
+                                {activeTab === 'chat' && (
+                                    <div className="card" style={{padding:0, overflow:'hidden'}}>
+                                        <div className="chat-container">
+                                            {/* 위기 시그널 케어 배너 */}
+                                            {careSignal && !careDismissed && (careSignal.level === 'warning' || careSignal.level === 'danger') && (
+                                                <div className={`care-banner ${careSignal.level}`}>
+                                                    <div className="body">
+                                                        <div className="title">
+                                                            {careSignal.level === 'danger' ? '잠시 멈추고 도움을 받아보세요' : '보호자님의 마음도 함께 살펴드릴게요'}
+                                                        </div>
+                                                        <div>{careSignal.suggestion}</div>
+                                                        <div className="actions">
+                                                            {careSignal.action === 'expedite_or_emergency' && (
+                                                                <>
+                                                                    <button onClick={() => alert('상담 일정 조정 페이지로 이동 (PoC 미구현)')}>상담 일정 앞당기기</button>
+                                                                    <button onClick={() => window.open('tel:1577-0199')}>1577-0199 (정신건강 상담)</button>
+                                                                </>
+                                                            )}
+                                                            {careSignal.action === 'offer_reschedule' && (
+                                                                <button onClick={() => alert('상담 일정 조정 페이지로 이동 (PoC 미구현)')}>상담 일정 조정 알아보기</button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <button className="dismiss" onClick={() => setCareDismissed(true)} title="닫기">×</button>
+                                                </div>
+                                            )}
+
+                                            {messages.length === 0 && (
+                                                <div className="chat-empty">
+                                                    <p>보고서에 대해 궁금한 점을 편하게 물어보세요.</p>
+                                                    <p style={{fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.3rem'}}>
+                                                        진단·처방에 해당하는 질문은 상담 선생님께 안내드릴게요.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            <div className="example-chips">
+                                                {['T점수가 뭔가요?', '준임상이 뭐예요?', '주의집중 점수가 어떤 의미인지 궁금해요', '상담에서 어떤 걸 물어보면 좋을까요?'].map((q) => (
+                                                    <button key={q} className="chip" onClick={() => handleSendChat(q)} disabled={chatLoading}>{q}</button>
+                                                ))}
+                                            </div>
+
+                                            <div className="chat-messages">
+                                                {messages.map((m, i) => {
+                                                    if (m.role !== 'assistant') {
+                                                        return <div key={i} className="chat-msg user">{m.content}</div>;
+                                                    }
+                                                    const cleaned = cleanLLMOutput(m.content);
+                                                    const { body, followups } = splitFollowups(cleaned);
+                                                    return (
+                                                        <div key={i} className="chat-msg assistant">
+                                                            <span dangerouslySetInnerHTML={{ __html: marked.parse(body || '...') }} />
+                                                            {!chatLoading && followups.length > 0 && (
+                                                                <div className="followup-row">
+                                                                    <div className="followup-label">이런 것도 궁금하실 수 있어요</div>
+                                                                    <div className="followup-chips">
+                                                                        {followups.map((q, k) => (
+                                                                            <button key={k} className="followup-chip"
+                                                                                onClick={() => handleSendChat(q)}
+                                                                                disabled={chatLoading}>
+                                                                                {q}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {!chatLoading && m.content && (
+                                                                <div className="feedback-row">
+                                                                    <span>도움이 되셨나요?</span>
+                                                                    <button
+                                                                        className={`feedback-btn ${m.feedback === 'up' ? 'selected' : ''}`}
+                                                                        onClick={() => {
+                                                                            const prevQ = i > 0 ? messages[i-1].content : '';
+                                                                            API.submitFeedback('up', prevQ, m.content, '');
+                                                                            setMessages(messages.map((mm, j) => j === i ? {...mm, feedback: 'up'} : mm));
+                                                                        }}
+                                                                    >좋아요</button>
+                                                                    <button
+                                                                        className={`feedback-btn ${m.feedback === 'down' ? 'selected' : ''}`}
+                                                                        onClick={() => {
+                                                                            const prevQ = i > 0 ? messages[i-1].content : '';
+                                                                            const comment = window.prompt('어떤 부분이 아쉬웠나요? (선택, 한 줄)') || '';
+                                                                            API.submitFeedback('down', prevQ, m.content, comment);
+                                                                            setMessages(messages.map((mm, j) => j === i ? {...mm, feedback: 'down'} : mm));
+                                                                        }}
+                                                                    >별로</button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                                <div ref={chatEndRef} />
+                                            </div>
+
+                                            <div className="chat-input-wrap">
+                                                <input
+                                                    className="chat-input"
+                                                    placeholder="궁금한 점을 입력해 주세요…"
+                                                    value={chatInput}
+                                                    onChange={(e) => setChatInput(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleSendChat(chatInput)}
+                                                    disabled={chatLoading}
+                                                />
+                                                <button
+                                                    className="btn btn-primary"
+                                                    onClick={() => handleSendChat(chatInput)}
+                                                    disabled={chatLoading || !chatInput.trim()}
+                                                >
+                                                    {chatLoading ? <div className="spinner"/> : '전송'}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* ─── 상담사 인계 메모 ─── */}
+                                        {messages.filter(m => m.role === 'user').length >= 2 && (
+                                            <div className="handoff-section">
+                                                {!handoffNote ? (
+                                                    <div className="handoff-promo">
+                                                        <div className="promo-text">
+                                                            <strong>상담 선생님께 미리 전해드릴까요?</strong>
+                                                            지금까지의 대화를 정리해 인계 메모로 만들어드립니다.
+                                                        </div>
+                                                        <button
+                                                            className="btn btn-accent"
+                                                            onClick={handleHandoff}
+                                                            disabled={handoffLoading}
+                                                        >
+                                                            {handoffLoading ? <><div className="spinner"/> 정리 중…</> : '인계 메모 만들기'}
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="handoff-letter">
+                                                        <div className="handoff-header">
+                                                            <div className="handoff-title">상담 선생님께 드리는 메모</div>
+                                                            <div className="handoff-actions">
+                                                                <button className="btn btn-outline" onClick={() => navigator.clipboard.writeText(handoffNote).then(() => alert('복사되었습니다'))}>복사</button>
+                                                                <button className="btn btn-outline" onClick={() => setHandoffNote('')}>다시 정리</button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="md-content"
+                                                             dangerouslySetInnerHTML={{ __html: marked.parse(cleanHandoffNote(handoffNote)) }} />
+                                                        <div className="disclaimer">
+                                                            참고. 이 메모는 보호자-AI 대화에서 추출한 보조 자료이며, 임상 판단의 근거가 아닙니다.
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

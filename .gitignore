@@ -1,0 +1,24 @@
+# Environment
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Runtime logs (실행 시 자동 생성)
+logs/
+
+# Eval 산출물 (스크립트 실행 시 자동 생성, 샘플 PDF 추출값 포함)
+scripts/eval_pdf_results.json
+scripts/eval_results.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
